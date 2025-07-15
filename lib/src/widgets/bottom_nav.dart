@@ -11,7 +11,6 @@ class BottomNavigation extends StatefulWidget {
 }
 
 class _BottomNavigationState extends State<BottomNavigation> with WidgetsBindingObserver{
-  // final AudioController _con = Get.put(AudioController());
 
   int _curIdx = 0;
 
@@ -48,8 +47,8 @@ class _BottomNavigationState extends State<BottomNavigation> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         body: SafeArea(
           child: Center(

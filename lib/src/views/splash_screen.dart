@@ -1,18 +1,19 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sangeet/src/controller/audio_controller.dart';
 import 'package:sangeet/src/widgets/cache_storage.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  final AudioController _con = Get.put(AudioController());
+  final AudioController _con = Get.find();
 
   @override
   void initState() {

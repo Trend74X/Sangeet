@@ -1,8 +1,11 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:developer' as dev;
+import 'dart:math' as math;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:get/get.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+import 'package:on_audio_query_forked/on_audio_query.dart';
+import 'package:sangeet/src/helper/database_helper.dart';
 import 'package:sangeet/src/views/filtered_songs.dart';
 import 'package:sangeet/src/widgets/bottom_nav.dart';
 import 'package:sangeet/src/widgets/cache_storage.dart';
@@ -11,16 +14,16 @@ import 'package:sangeet/src/widgets/show_message.dart';
 class AudioController extends GetxController {
   final OnAudioQuery audioQuery = OnAudioQuery();
   final AudioPlayer audioPlayer = AudioPlayer(); 
+  final dbHelper = DatabaseHelper();
 
-  // ignore: prefer_typing_uninitialized_variables
-  var nowPlaying;
+  dynamic nowPlaying;
   bool _hasPermission = false;
-  RxList allSongs = [].obs;
-  RxList albumList = [].obs;
-  RxList artistSongs = [].obs;
-  RxList playlist = [].obs;
-  RxList filteredSongs = [].obs;
-  RxList currentPlayingList = [].obs;
+  List<SongModel> allSongs = [];
+  List<SongModel> currentPlayingList = [];
+  List<SongModel> filteredSongs = [];
+  List<AlbumModel> albumList = [];
+  List<dynamic> artistSongs = [];
+  List<Map<String, dynamic>> playlists = [];
   RxInt isPlayingIdx = 0.obs;
   RxInt isPlayingId = 0.obs;
   bool isRepeat = false; 
@@ -28,101 +31,103 @@ class AudioController extends GetxController {
   RxBool isPlaying = false.obs;
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
-  
 
   getAllFiles() {
     checkAndRequestPermissions();
   }
 
   checkAndRequestPermissions({bool retry = true}) async {
-    // The param 'retryRequest' is false, by default.
     _hasPermission = await audioQuery.checkAndRequest(
       retryRequest: retry,
     );
-    if(_hasPermission) {
+    if (_hasPermission) {
       await getAllSongs();
       await getAlbumList();
       await getArtistList();
-      await getPlayList();
+      // await getPlayList();
       convertSecondsToDuration(nowPlaying.duration);
       Get.off(() => const BottomNavigation());
-      // duration = formatTime(time);
     }
-    //  else {
-    //   checkAndRequestPermissions();
-    // }
   }
 
-  getAllSongs() async {
-    var data = await audioQuery.querySongs(
-      sortType: SongSortType.TITLE,
-      orderType: OrderType.ASC_OR_SMALLER,
-      uriType: UriType.EXTERNAL,
-      ignoreCase: true
-    );
-    allSongs(data);
-    currentPlayingList(allSongs);
-    nowPlaying = currentPlayingList[0];
-    // if it is playing beforehand
-    nowPlaying = read('nowPlaying') == '' ? allSongs[0] : SongModel(read('nowPlaying')) ;
-    if(read('currentPlayingList') != ''){
-      // currentPlayingList = read('currentPlayingList') == '' ? allSongs : read('currentPlayingList');
-      List songs = read('currentPlayingList')
-                            .map((songsData) =>
-                              SongModel(songsData)
-                            ).toList();
-      currentPlayingList = RxList<dynamic>(songs);
-    } 
-    // else {
-    //   await openAppSettings();
-    // }
-    isPlayingIdx(read('isPlayingIdx') == '' ? 0 : read('isPlayingIdx'));
+  Future<void> getAllSongs() async {
+    try {
+      final scannedSongs = await audioQuery.querySongs(
+        sortType: SongSortType.TITLE,
+        orderType: OrderType.ASC_OR_SMALLER,
+        uriType: UriType.EXTERNAL,
+        ignoreCase: true,
+      );
+
+      // Insert all songs into database
+      for (var song in scannedSongs) {
+        await dbHelper.insertSong(song);
+      }
+
+      allSongs.assignAll(scannedSongs);
+      currentPlayingList.assignAll(allSongs);
+
+      // Restore from cache (GetStorage or similar)
+      final cachedNowPlaying = read('nowPlaying');
+      final cachedPlayingList = read('currentPlayingList');
+      final cachedIndex = read('isPlayingIdx');
+
+      if (cachedNowPlaying != null && cachedNowPlaying != '') {
+        nowPlaying = SongModel(cachedNowPlaying);
+      } else {
+        nowPlaying = currentPlayingList.isNotEmpty ? currentPlayingList[0] : null;
+      }
+
+      if (cachedPlayingList != null && cachedPlayingList != '') {
+        final List<SongModel> cachedList = cachedPlayingList
+            .map<SongModel>((songData) => SongModel(songData))
+            .toList();
+        currentPlayingList.assignAll(cachedList);
+      }
+
+      isPlayingIdx(cachedIndex == '' ? 0 : cachedIndex);
+    } catch (e) {
+      dev.log('Error: $e');
+    }
   }
 
   getAlbumList() async {
     var data = await audioQuery.queryAlbums(
-        sortType: AlbumSortType.ALBUM,
-        orderType: OrderType.ASC_OR_SMALLER,
-        // uriType: UriType.EXTERNAL,
-        ignoreCase: true
-      );
-    albumList(data);
+      sortType: AlbumSortType.ALBUM,
+      orderType: OrderType.ASC_OR_SMALLER,
+      ignoreCase: true,
+    );
+    albumList = data;
   }
 
   getArtistList() async {
     var data = await audioQuery.queryArtists(
-        sortType: ArtistSortType.ARTIST,
-        orderType: OrderType.ASC_OR_SMALLER,
-        uriType: UriType.EXTERNAL,
-        ignoreCase: true
-      );
-    artistSongs(data);
-  }
-
-  getPlayList() async {
-    var data = await audioQuery.queryPlaylists(
-      sortType: PlaylistSortType.PLAYLIST,
+      sortType: ArtistSortType.ARTIST,
       orderType: OrderType.ASC_OR_SMALLER,
       uriType: UriType.EXTERNAL,
-      ignoreCase: true
+      ignoreCase: true,
     );
-    playlist(data);
+    artistSongs = data;
   }
+
+  // Future<void> getPlayList() async {
+  //   playlists = await dbHelper.getPlaylists();
+  // }
 
   getFilteredSongs(type, albumId, artistId, name) {
     var songs = [];
-    for(var item in allSongs) {
-      if(type == 'album') {                   // for albums
-        if(item.albumId == albumId && item.artistId == artistId && item.isMusic) {
+    for (var item in allSongs) {
+      if (type == 'album') {
+        if (item.albumId == albumId && item.artistId == artistId && item.isMusic!) {
           songs.add(item);
         }
-      } else if(type == 'artist') {
-        if(item.artistId == artistId && item.isMusic) {
+      } else if (type == 'artist') {
+        if (item.artistId == artistId && item.isMusic!) {
           songs.add(item);
         }
       }
     }
-    filteredSongs(songs);
+    filteredSongs = List<SongModel>.from(songs);
     Get.to(() => const FilteredSongs(), arguments: name);
   }
 
@@ -132,9 +137,12 @@ class AudioController extends GetxController {
       audioPlayer.play(DeviceFileSource(nowPlaying.data));
       isPlayingId(nowPlaying.id);
       isPlaying(true);
+
+      // Store in memory
       write('nowPlaying', nowPlaying.getMap);
+      write('currentPlayingList', currentPlayingList.map((s) => s.getMap).toList());
       write('isPlayingIdx', isPlayingIdx.value);
-    } catch(e) {
+    } catch (e) {
       isPlaying(false);
     }
   }
@@ -143,7 +151,7 @@ class AudioController extends GetxController {
     try {
       audioPlayer.pause();
       isPlaying(false);
-    } catch(e) {
+    } catch (e) {
       isPlaying(false);
     }
   }
@@ -154,19 +162,16 @@ class AudioController extends GetxController {
     isPlaying(true);
   }
 
-  addToNowPlaying(idx) {
+  Future<void> addToNowPlaying(int idx) async {
     nowPlaying = currentPlayingList[idx];
-    final songsData = currentPlayingList.map((song) {
-      return song.getMap;
-    }).toList();
-    write('currentPlayingList', songsData);
-    write('isPlayingIdx', idx);
     isPlayingIdx(idx);
+    await dbHelper.insertSong(nowPlaying);
+    await dbHelper.insertCurrentPlaying(songId: nowPlaying.id, index: idx);
     playSong();
   }
 
   prevSong() {
-    if(isPlayingIdx.value > 0) {
+    if (isPlayingIdx.value > 0) {
       isPlayingIdx(isPlayingIdx.value - 1);
       nowPlaying = currentPlayingList[isPlayingIdx.value];
       playSong();
@@ -177,10 +182,10 @@ class AudioController extends GetxController {
   }
 
   nextSong() {
-    if(isShuffle) {
+    if (isShuffle) {
       shuffledList();
     } else {
-      if(isPlayingIdx.value < currentPlayingList.length) {
+      if (isPlayingIdx.value < currentPlayingList.length - 1) {
         isPlayingIdx(isPlayingIdx.value + 1);
         nowPlaying = currentPlayingList[isPlayingIdx.value];
         playSong();
@@ -192,7 +197,7 @@ class AudioController extends GetxController {
   }
 
   songLoop() async {
-    if(isRepeat == false) {
+    if (isRepeat == false) {
       await audioPlayer.setReleaseMode(ReleaseMode.loop);
       isRepeat = true;
       showMessage('Repeat this song');
@@ -204,28 +209,22 @@ class AudioController extends GetxController {
   }
 
   songShuffle() {
-    if(isShuffle == false) {
-      isShuffle = true;
-      showMessage('Shuffle is on');
-    } else {
-      isShuffle = false;
-      showMessage('Shuffle off');
-    }
+    isShuffle = !isShuffle;
+    showMessage(isShuffle ? 'Shuffle is on' : 'Shuffle off');
   }
 
-
   shuffledList() {
-    var randomSongIdx = Random().nextInt(currentPlayingList.length + 1);
+    var randomSongIdx = math.Random().nextInt(currentPlayingList.length);
     isPlayingIdx(randomSongIdx);
     nowPlaying = currentPlayingList[randomSongIdx];
     playSong();
   }
 
   formatTime(value) {
-    if(value is int) {
+    if (value is int) {
       convertSecondsToDuration(value);
     } else {
-      if(value.inSeconds == 0) {
+      if (value.inSeconds == 0) {
         return '00:00';
       } else {
         final hh = (value.inHours).toString().padLeft(2, '0');
@@ -237,16 +236,16 @@ class AudioController extends GetxController {
   }
 
   convertSecondsToDuration(value) {
-    duration  = Duration(milliseconds: value);
+    duration = Duration(milliseconds: value);
     return duration;
   }
 
   searchSong(name) async {
     var results = await audioQuery.queryWithFilters(
-      name, 
-      WithFiltersType.AUDIOS
+      name,
+      WithFiltersType.AUDIOS,
     );
-    allSongs(results.toSongModel());
+    allSongs = results.toSongModel();
   }
 
   Function debounce(Function function, Duration duration) {
@@ -258,6 +257,82 @@ class AudioController extends GetxController {
       timer = Timer(duration, () => function());
     };
   }
+
+  getAlbumListFromDb() async {
+    final allSongs = await dbHelper.getAllSongs();
+    final Map<int, Map<String, dynamic>> albumMap = {};
+
+    for (var song in allSongs) {
+      // Get required fields safely
+      final int albumId = song['album_id'] is int
+          ? song['album_id']
+          : int.tryParse(song['album_id'].toString()) ?? -1;
+      final int artistId = song['artist_id'] is int
+          ? song['artist_id']
+          : int.tryParse(song['artist_id'].toString()) ?? -1;
+
+      final String album = (song['album'] ?? 'Unknown Album').toString();
+      final String artist = (song['artist'] ?? 'Unknown Artist').toString();
+
+      if (!albumMap.containsKey(albumId)) {
+        albumMap[albumId] = {
+          '_id': albumId,
+          'album': album,
+          'artist': artist,
+          'artist_id': artistId,
+          'numsongs': 1,
+        };
+      } else {
+        albumMap[albumId]!['numsongs'] += 1;
+      }
+    }
+
+    albumList = albumMap.values.map((e) => AlbumModel(e)).toList();
+    update(); // for GetX
+  }
+
+
+  getArtistListFromDb() async {
+    final allSongs = await dbHelper.getAllSongs();
+    final Map<int, Map<String, dynamic>> artistMap = {};
+
+    for (var song in allSongs) {
+      final int artistId = song['artist_id'] is int
+          ? song['artist_id']
+          : int.tryParse(song['artist_id'].toString()) ?? -1;
+
+      final String artist = (song['artist'] ?? 'Unknown Artist').toString();
+      final int albumId = song['album_id'] is int
+          ? song['album_id']
+          : int.tryParse(song['album_id'].toString()) ?? -1;
+
+      if (!artistMap.containsKey(artistId)) {
+        artistMap[artistId] = {
+          '_id': artistId,
+          'artist': artist,
+          'number_of_tracks': 1,
+          'albums': <int>{albumId}, // Use a Set to ensure unique albums
+        };
+      } else {
+        artistMap[artistId]!['number_of_tracks'] += 1;
+        artistMap[artistId]!['albums'].add(albumId);
+      }
+    }
+
+    // Now convert to expected format
+    artistSongs = artistMap.values.map((e) {
+      return ArtistModel({
+        '_id': e['_id'],
+        'artist': e['artist'],
+        'number_of_tracks': e['number_of_tracks'],
+        'number_of_albums': (e['albums'] as Set).length,
+      });
+    }).toList();
+
+    update(); // For GetX
+  }
+  
+
 
   // for playlist
 

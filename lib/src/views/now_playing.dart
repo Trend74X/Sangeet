@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:marquee/marquee.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sangeet/src/controller/audio_controller.dart';
 import 'package:sangeet/src/views/splash_screen.dart';
@@ -17,7 +18,7 @@ class NowPlaying extends StatefulWidget {
 }
 
 class _NowPlayingState extends State<NowPlaying> {
-  final AudioController _con = Get.put(AudioController());
+  final AudioController _con = Get.find();
   Completer<void> audioCompletionCompleter = Completer<void>();
   
   debouncedRefresh() {
@@ -139,8 +140,8 @@ class _NowPlayingState extends State<NowPlaying> {
   albumArt() {
     return QueryArtworkWidget(
       controller: _con.audioQuery,
-      id: _con.nowPlaying.id,
-      type: ArtworkType.AUDIO,
+      id: _con.nowPlaying!.id,
+      type: ArtworkType.ALBUM,
       keepOldArtwork: true,
       nullArtworkWidget: Image(
         image: const AssetImage('assets/images/appIcon.png'),
@@ -160,7 +161,7 @@ class _NowPlayingState extends State<NowPlaying> {
           height: 35.0,
           width: MediaQuery.of(context).size.width * 0.85,
           child: Marquee(
-            text: _con.nowPlaying.title,
+            text: _con.nowPlaying!.title,
             scrollAxis: Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,
             blankSpace: 200.0,
@@ -188,7 +189,7 @@ class _NowPlayingState extends State<NowPlaying> {
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
               child: Text(
-                ' ${_con.nowPlaying.artist}',
+                ' ${_con.nowPlaying!.artist}',
                 overflow: TextOverflow.ellipsis
               ),
             ),
@@ -199,7 +200,7 @@ class _NowPlayingState extends State<NowPlaying> {
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
               child: Text(
-                ' ${_con.nowPlaying.album}',
+                ' ${_con.nowPlaying!.album}',
                 overflow: TextOverflow.ellipsis
               ),
             ),
@@ -222,7 +223,7 @@ class _NowPlayingState extends State<NowPlaying> {
               final position = Duration(seconds: val.toInt());
               setState(() { });
               await _con.audioPlayer.seek(position);
-              await _con.resumeSong();
+              _con.resumeSong();
             }
           ),
         Row(
@@ -269,7 +270,7 @@ class _NowPlayingState extends State<NowPlaying> {
           btnShuffleBg(
             Icons.shuffle,
             () async {
-              await _con.songShuffle();
+              _con.songShuffle();
               setState(() { });
             }
           ),
@@ -318,9 +319,11 @@ class _NowPlayingState extends State<NowPlaying> {
       onTap: ontap,
       child: CircleAvatar(
         radius: 30.0,
+        backgroundColor:  Theme.of(context).primaryColor,
         child: Icon(
           icon,
           size: 40.0,
+          color: Colors.white,
         ),
       ),
     );

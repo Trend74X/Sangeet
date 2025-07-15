@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:sangeet/src/controller/audio_controller.dart';
 import 'package:sangeet/src/views/album_list.dart';
 import 'package:sangeet/src/views/all_music.dart';
@@ -20,7 +20,7 @@ class MusicListTab extends StatefulWidget {
 class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderStateMixin{
 
   late final TabController _tabController;
-  final AudioController _con = Get.put(AudioController());
+  final AudioController _con = Get.find();
 
   @override
   void initState() {
@@ -98,7 +98,7 @@ class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderS
         Positioned(
           bottom: 0.0,
           child: Container(
-            height: 73.0,
+            // height: 73.0,
             width: MediaQuery.of(context).size.width,
             color: Colors.red,
             child: nowPlayingSongSnippet(),
@@ -137,7 +137,8 @@ class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderS
                       maxLines: 2,
                       style: const TextStyle(
                         fontSize: 16.0,
-                        fontWeight: FontWeight.bold
+                        fontWeight: FontWeight.bold,
+                        height: 1.15
                       ),
                     )
                   ),
@@ -154,11 +155,13 @@ class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderS
                 },
                 child: CircleAvatar(
                   radius: 20.0,
+                  backgroundColor: Theme.of(context).primaryColor,
                   child: Icon(
                     _con.isPlaying.value
                       ? Icons.pause
                       : Icons.play_arrow,
                     size: 30.0,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -168,11 +171,13 @@ class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderS
                   _con.nextSong();
                   setState(() { });
                 },
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   radius: 20.0,
+                  backgroundColor: Theme.of(context).primaryColor,
                   child: Icon(
                     Icons.skip_next,
                     size: 30.0,
+                    color: Colors.white,
                   ),
                 ),
               ),

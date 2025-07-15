@@ -35,7 +35,7 @@ class CustomTextField extends StatelessWidget {
   final bool autofocus;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     this.initialValue,
     this.controller,
     this.labelText,
@@ -73,7 +73,7 @@ class CustomTextField extends StatelessWidget {
     this.enableInteractiveSelection = true, 
     this.errorMaxLines,
     this.autofocus = false
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

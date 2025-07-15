@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:sangeet/src/controller/audio_controller.dart';
 import 'package:sangeet/src/helper/theme.dart';
 import 'package:sangeet/src/views/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await GetStorage.init();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -22,6 +22,9 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<AudioController>()) {
+      Get.put(AudioController(), permanent: true);
+    }
     return GetMaterialApp(
       title: 'Sangeet',
       debugShowCheckedModeBanner: false,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:sangeet/src/controller/audio_controller.dart';
 
 class FilteredSongs extends StatefulWidget {
@@ -12,7 +12,7 @@ class FilteredSongs extends StatefulWidget {
 
 class _FilteredSongsState extends State<FilteredSongs> {
 
-  final AudioController _con = Get.put(AudioController());
+  final AudioController _con = Get.find();
   var args = Get.arguments;
 
   @override
@@ -23,13 +23,16 @@ class _FilteredSongsState extends State<FilteredSongs> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0.0,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () => Get.back(), 
+          icon: Icon(Icons.arrow_back_ios)
+        ),
       ),
       body: SingleChildScrollView(
-        child: Obx(() => 
-          _con.filteredSongs.isEmpty
-            ? const Center(child: Text('No Songs'))
-            : allsongsList()
-        ),
+        child: _con.filteredSongs.isEmpty
+          ? const Center(child: Text('No Songs'))
+          : allsongsList()
       )
     );
   }
@@ -95,7 +98,7 @@ class _FilteredSongsState extends State<FilteredSongs> {
             ],
           ),
           onTap: () {
-            _con.currentPlayingList(_con.filteredSongs as List<SongModel>?);
+            _con.currentPlayingList = List<SongModel>.from(_con.filteredSongs);
             _con.addToNowPlaying(index);
             setState(() { });
           },
