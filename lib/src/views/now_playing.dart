@@ -141,7 +141,7 @@ class _NowPlayingState extends State<NowPlaying> {
     return QueryArtworkWidget(
       controller: _con.audioQuery,
       id: _con.nowPlaying!.id,
-      type: ArtworkType.ALBUM,
+      type: ArtworkType.AUDIO,
       keepOldArtwork: true,
       nullArtworkWidget: Image(
         image: const AssetImage('assets/images/appIcon.png'),

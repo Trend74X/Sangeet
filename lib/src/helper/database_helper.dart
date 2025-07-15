@@ -88,6 +88,7 @@ class DatabaseHelper {
     final dbClient = await db;
 
     await dbClient.insert('songs', {
+      'id': song.id,
       '_id': song.id,
       'title': song.title,
       'artist': song.artist,
