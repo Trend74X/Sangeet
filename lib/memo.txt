@@ -1,0 +1,65 @@
+*** Replace this in your PC ****
+
+
+
+/// [SongModel] that contains all [Song] Information.
+class SongModel {
+  SongModel(this._info);
+
+  final Map<dynamic, dynamic> _info;
+
+  int get id => _parseInt(_info["_id"]) ?? 0;
+  String get data => (_info["_data"] ?? _info["data"] ?? "") as String;
+  String? get uri => _info["_uri"];
+  String get displayName => (_info["_display_name"] ?? "") as String;
+  String get displayNameWOExt => (_info["_display_name_wo_ext"] ?? "") as String;
+  int get size => _parseInt(_info["_size"]) ?? 0;
+
+  String? get album => _info["album"];
+  int? get albumId => _parseInt(_info["album_id"]);
+
+  String? get artist => _info["artist"];
+  int? get artistId => _parseInt(_info["artist_id"]);
+
+  String? get genre => _info["genre"];
+  int? get genreId => _parseInt(_info["genre_id"]);
+
+  int? get bookmark => _parseInt(_info["bookmark"]);
+  String? get composer => _info["composer"];
+  int? get dateAdded => _parseInt(_info["date_added"]);
+  int? get dateModified => _parseInt(_info["date_modified"]);
+  int? get duration => _parseInt(_info["duration"]);
+
+  String get title => _info["title"];
+  int? get track => _parseInt(_info["track"]);
+  String get fileExtension => _info["file_extension"];
+
+  bool? get isAlarm => _parseBool(_info["is_alarm"]);
+  bool? get isAudioBook => _parseBool(_info["is_audiobook"]);
+  bool? get isMusic => _parseBool(_info["is_music"]);
+  bool? get isNotification => _parseBool(_info["is_notification"]);
+  bool? get isPodcast => _parseBool(_info["is_podcast"]);
+  bool? get isRingtone => _parseBool(_info["is_ringtone"]);
+
+  Map get getMap => _info;
+
+  @override
+  String toString() => _info.toString();
+
+  // === Helpers ===
+
+  int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is String) return value == "1" || value.toLowerCase() == "true";
+    return null;
+  }
+}
