@@ -161,6 +161,7 @@ class _NowPlayingState extends State<NowPlaying> {
           height: 35.0,
           width: MediaQuery.of(context).size.width * 0.85,
           child: Marquee(
+            key: ValueKey(_con.nowPlaying!.title), 
             text: _con.nowPlaying!.title,
             scrollAxis: Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,

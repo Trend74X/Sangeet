@@ -100,7 +100,7 @@ class _MusicListTabState extends State<MusicListTab>  with SingleTickerProviderS
           child: Container(
             // height: 73.0,
             width: MediaQuery.of(context).size.width,
-            color: Colors.red,
+            color: Colors.red.shade400,
             child: nowPlayingSongSnippet(),
           ),
         )
