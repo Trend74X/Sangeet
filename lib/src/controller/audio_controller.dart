@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query_forked/on_audio_query.dart';
-import 'package:sangeet/src/helper/database_helper.dart';
 import 'package:sangeet/src/views/filtered_songs.dart';
 import 'package:sangeet/src/widgets/bottom_nav.dart';
 import 'package:sangeet/src/widgets/cache_storage.dart';
@@ -14,7 +13,6 @@ import 'package:sangeet/src/widgets/show_message.dart';
 class AudioController extends GetxController {
   final OnAudioQuery audioQuery = OnAudioQuery();
   final AudioPlayer audioPlayer = AudioPlayer(); 
-  final dbHelper = DatabaseHelper();
 
   dynamic nowPlaying;
   bool _hasPermission = false;
@@ -59,12 +57,8 @@ class AudioController extends GetxController {
         ignoreCase: true,
       );
 
-      // Insert all songs into database
-      for (var song in scannedSongs) {
-        await dbHelper.insertSong(song);
-      }
-
       allSongs.assignAll(scannedSongs);
+      filteredSongs.assignAll(scannedSongs);
       currentPlayingList.assignAll(allSongs);
 
       // Restore from cache (GetStorage or similar)
@@ -165,8 +159,6 @@ class AudioController extends GetxController {
   Future<void> addToNowPlaying(int idx) async {
     nowPlaying = currentPlayingList[idx];
     isPlayingIdx(idx);
-    await dbHelper.insertSong(nowPlaying);
-    await dbHelper.insertCurrentPlaying(songId: nowPlaying.id, index: idx);
     playSong();
   }
 
@@ -257,81 +249,6 @@ class AudioController extends GetxController {
       timer = Timer(duration, () => function());
     };
   }
-
-  getAlbumListFromDb() async {
-    final allSongs = await dbHelper.getAllSongs();
-    final Map<int, Map<String, dynamic>> albumMap = {};
-
-    for (var song in allSongs) {
-      // Get required fields safely
-      final int albumId = song['album_id'] is int
-          ? song['album_id']
-          : int.tryParse(song['album_id'].toString()) ?? -1;
-      final int artistId = song['artist_id'] is int
-          ? song['artist_id']
-          : int.tryParse(song['artist_id'].toString()) ?? -1;
-
-      final String album = (song['album'] ?? 'Unknown Album').toString();
-      final String artist = (song['artist'] ?? 'Unknown Artist').toString();
-
-      if (!albumMap.containsKey(albumId)) {
-        albumMap[albumId] = {
-          '_id': albumId,
-          'album': album,
-          'artist': artist,
-          'artist_id': artistId,
-          'numsongs': 1,
-        };
-      } else {
-        albumMap[albumId]!['numsongs'] += 1;
-      }
-    }
-
-    albumList = albumMap.values.map((e) => AlbumModel(e)).toList();
-    update(); // for GetX
-  }
-
-
-  getArtistListFromDb() async {
-    final allSongs = await dbHelper.getAllSongs();
-    final Map<int, Map<String, dynamic>> artistMap = {};
-
-    for (var song in allSongs) {
-      final int artistId = song['artist_id'] is int
-          ? song['artist_id']
-          : int.tryParse(song['artist_id'].toString()) ?? -1;
-
-      final String artist = (song['artist'] ?? 'Unknown Artist').toString();
-      final int albumId = song['album_id'] is int
-          ? song['album_id']
-          : int.tryParse(song['album_id'].toString()) ?? -1;
-
-      if (!artistMap.containsKey(artistId)) {
-        artistMap[artistId] = {
-          '_id': artistId,
-          'artist': artist,
-          'number_of_tracks': 1,
-          'albums': <int>{albumId}, // Use a Set to ensure unique albums
-        };
-      } else {
-        artistMap[artistId]!['number_of_tracks'] += 1;
-        artistMap[artistId]!['albums'].add(albumId);
-      }
-    }
-
-    // Now convert to expected format
-    artistSongs = artistMap.values.map((e) {
-      return ArtistModel({
-        '_id': e['_id'],
-        'artist': e['artist'],
-        'number_of_tracks': e['number_of_tracks'],
-        'number_of_albums': (e['albums'] as Set).length,
-      });
-    }).toList();
-
-    update(); // For GetX
-  }
-  
 
 
   // for playlist

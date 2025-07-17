@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:sangeet/src/controller/audio_controller.dart';
-import 'package:sangeet/src/helper/database_helper.dart';
 import 'package:sangeet/src/widgets/custom_textfield.dart';
 
 class AllMusic extends StatefulWidget {
@@ -15,29 +14,11 @@ class AllMusic extends StatefulWidget {
 class _AllMusicState extends State<AllMusic> {
   final AudioController _con = Get.find();
   final TextEditingController textFldCon = TextEditingController();
-  final dbHelper = DatabaseHelper();
-
-  List<SongModel> filteredSongs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    fetchSongsFromDb();
-  }
-
-  Future<void> fetchSongsFromDb() async {
-    final dbSongs = await dbHelper.getAllSongs();
-    final allDbSongs = dbSongs.map((e) => SongModel(e)).toList();
-    setState(() {
-      filteredSongs = allDbSongs;
-      _con.allSongs = allDbSongs;
-    });
-  }
 
   void handleSearch(String query) {
     final lowerQuery = query.toLowerCase();
     setState(() {
-      filteredSongs = _con.allSongs.where((song) {
+      _con.filteredSongs = _con.allSongs.where((song) {
         final title = song.title.toLowerCase();
         final artist = (song.artist ?? '').toLowerCase();
         return title.contains(lowerQuery) || artist.contains(lowerQuery);
@@ -54,7 +35,7 @@ class _AllMusicState extends State<AllMusic> {
           child: Column(
             children: [
               searchBox(),
-              filteredSongs.isEmpty
+              _con.filteredSongs.isEmpty
                   ? const Center(child: Text('Songs not found'))
                   : allsongsList(),
             ],
@@ -80,7 +61,7 @@ class _AllMusicState extends State<AllMusic> {
               onPressed: () {
                 setState(() {
                   textFldCon.clear();
-                  filteredSongs = _con.allSongs;
+                  _con.filteredSongs = _con.allSongs;
                 });
                 FocusScope.of(context).unfocus();
               },
@@ -96,12 +77,12 @@ class _AllMusicState extends State<AllMusic> {
 
   Widget allsongsList() {
     return ListView.separated(
-      itemCount: filteredSongs.length,
+      itemCount: _con.filteredSongs.length,
       shrinkWrap: true,
       separatorBuilder: (context, index) => const Divider(),
       physics: const ClampingScrollPhysics(),
       itemBuilder: (context, index) {
-        final song = filteredSongs[index];
+        final song = _con.filteredSongs[index];
         return Obx(() => ListTile(
               tileColor: _con.isPlayingId.value != 0 && _con.isPlayingId.value == song.id 
                 ? Theme.of(context).primaryColor
@@ -137,7 +118,7 @@ class _AllMusicState extends State<AllMusic> {
               ),
               onTap: () {
                 setState(() {
-                  _con.currentPlayingList = List<SongModel>.from(filteredSongs);
+                  _con.currentPlayingList = List<SongModel>.from(_con.filteredSongs);
                 });
                 _con.addToNowPlaying(index);
               },
