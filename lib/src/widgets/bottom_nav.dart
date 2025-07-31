@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:sangeet/src/controller/app_controller.dart';
 import 'package:sangeet/src/views/music_list_tab.dart';
 import 'package:sangeet/src/views/now_playing.dart';
 
@@ -11,6 +13,8 @@ class BottomNavigation extends StatefulWidget {
 }
 
 class _BottomNavigationState extends State<BottomNavigation> with WidgetsBindingObserver{
+
+  final AppController appCon = Get.put(AppController());
 
   int _curIdx = 0;
 
@@ -28,6 +32,7 @@ class _BottomNavigationState extends State<BottomNavigation> with WidgetsBinding
   @override
   void initState() {
     _curIdx =  widget.index;
+    appCon.checkOnlineStatus();
     super.initState();
     // WidgetsBinding.instance.addObserver(this);
   }
