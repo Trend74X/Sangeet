@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:marquee/marquee.dart';
@@ -53,16 +52,23 @@ class _NowPlayingState extends State<NowPlaying> {
 
     //on song complete
     _con.audioPlayer.onPlayerComplete.listen((event) {
-      if(_con.audioPlayer.state == PlayerState.completed) {
-        if (!audioCompletionCompleter.isCompleted) { // Check if it's not completed
-          audioCompletionCompleter.complete(); // Complete the custom future.
-          debugPrint('completed');
-          _con.isShuffle
-            ? _con.shuffledList()
-            : _con.nextSong();
-        }
-        debouncedRefresh();
+      if (!mounted) return; // Always safe
+      debugPrint('Song completed');
+
+      // Reset completer for next track
+      if (audioCompletionCompleter.isCompleted) {
+        audioCompletionCompleter = Completer<void>();
       }
+      audioCompletionCompleter.complete();
+
+      // Play next song
+      if (_con.isShuffle) {
+        _con.shuffledList();
+      } else {
+        _con.nextSong();
+      }
+
+      debouncedRefresh();
     });
 
   }
