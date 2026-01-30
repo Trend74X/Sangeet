@@ -42,13 +42,14 @@ class _NowPlayingState extends State<NowPlaying> {
     });
 
     //Listen to slider position changed
-    _con.audioPlayer.onPositionChanged.listen((event) {
-      if(mounted) {
-        setState(() {
+    _con.audioPlayer.onPositionChanged
+      .distinct((a, b) => a.inSeconds == b.inSeconds)
+      .listen((event) {
+        if (mounted && _con.dragValue == null) {
           _con.position = event;
-        });
-      }
-    });
+          setState(() { });
+        }
+      });
 
     //on song complete
     _con.audioPlayer.onPlayerComplete.listen((event) {
@@ -60,6 +61,12 @@ class _NowPlayingState extends State<NowPlaying> {
         audioCompletionCompleter = Completer<void>();
       }
       audioCompletionCompleter.complete();
+
+      setState(() {
+        _con.position = Duration.zero;
+        _con.duration = Duration.zero;
+        _con.dragValue = null;
+      });
 
       // Play next song
       if (_con.isShuffle) {

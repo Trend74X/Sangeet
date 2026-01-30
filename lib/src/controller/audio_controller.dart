@@ -165,9 +165,14 @@ class AudioController extends GetxController {
 
   prevSong() {
     if (isPlayingIdx.value > 0) {
-      dragValue = 0.0;
       isPlayingIdx(isPlayingIdx.value - 1);
       nowPlaying = currentPlayingList[isPlayingIdx.value];
+
+      // Reset slider state
+      dragValue = null;
+      position = Duration.zero;
+      duration = Duration.zero;
+
       playSong();
     } else {
       showMessage('This is the first song.');
@@ -179,10 +184,15 @@ class AudioController extends GetxController {
     if (isShuffle) {
       shuffledList();
     } else {
-      dragValue = 0.0;
       if (isPlayingIdx.value < currentPlayingList.length - 1) {
         isPlayingIdx(isPlayingIdx.value + 1);
         nowPlaying = currentPlayingList[isPlayingIdx.value];
+
+        // Reset slider state
+        dragValue = null;
+        position = Duration.zero;
+        duration = Duration.zero;
+
         playSong();
       } else {
         showMessage('This is the last song.');
@@ -210,9 +220,14 @@ class AudioController extends GetxController {
 
   shuffledList() {
     var randomSongIdx = math.Random().nextInt(currentPlayingList.length);
-    dragValue = 0.0;
     isPlayingIdx(randomSongIdx);
     nowPlaying = currentPlayingList[randomSongIdx];
+
+    // Reset slider state
+    dragValue = null;
+    position = Duration.zero;
+    duration = Duration.zero;
+
     playSong();
   }
 
