@@ -217,32 +217,41 @@ class _NowPlayingState extends State<NowPlaying> {
     );
   }
 
-  slider() {
+  Widget slider() {
+    final durationSeconds = _con.duration.inSeconds.toDouble();
+    final positionSeconds = _con.position.inSeconds.toDouble();
+
     return Column(
       children: [
-        _con.duration.inSeconds < _con.position.inSeconds
-          ? const SizedBox()
-          : Slider(
-            min: 0,
-            max: _con.duration.inSeconds.toDouble(),
-            value: _con.position.inSeconds.toDouble(),
-            onChanged: (val) async {
-              final position = Duration(seconds: val.toInt());
-              setState(() { });
-              await _con.audioPlayer.seek(position);
-              _con.resumeSong();
-            }
-          ),
+        Slider(
+          min: 0,
+          max: durationSeconds > 0 ? durationSeconds : 1,
+          value: _con.dragValue ?? positionSeconds,
+          onChanged: (value) {
+            setState(() {
+              _con.dragValue = value; // 🎯 smooth dragging
+            });
+          },
+          onChangeEnd: (value) async {
+            final position = Duration(seconds: value.toInt());
+            _con.dragValue = null; // reset
+            await _con.audioPlayer.seek(position);
+          },
+        ),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(_con.formatTime(_con.position)),
-            Text(_con.formatTime(_con.duration))
+            Text(_con.formatTime(
+              Duration(seconds: (_con.dragValue ?? positionSeconds).toInt()),
+            )),
+            Text(_con.formatTime(_con.duration)),
           ],
-        )
+        ),
       ],
     );
   }
+
 
   Widget btnControls() {
     return Obx(() => 

@@ -29,6 +29,7 @@ class AudioController extends GetxController {
   RxBool isPlaying = false.obs;
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
+  double? dragValue;
 
   getAllFiles() {
     checkAndRequestPermissions();
@@ -164,6 +165,7 @@ class AudioController extends GetxController {
 
   prevSong() {
     if (isPlayingIdx.value > 0) {
+      dragValue = 0.0;
       isPlayingIdx(isPlayingIdx.value - 1);
       nowPlaying = currentPlayingList[isPlayingIdx.value];
       playSong();
@@ -177,6 +179,7 @@ class AudioController extends GetxController {
     if (isShuffle) {
       shuffledList();
     } else {
+      dragValue = 0.0;
       if (isPlayingIdx.value < currentPlayingList.length - 1) {
         isPlayingIdx(isPlayingIdx.value + 1);
         nowPlaying = currentPlayingList[isPlayingIdx.value];
@@ -207,6 +210,7 @@ class AudioController extends GetxController {
 
   shuffledList() {
     var randomSongIdx = math.Random().nextInt(currentPlayingList.length);
+    dragValue = 0.0;
     isPlayingIdx(randomSongIdx);
     nowPlaying = currentPlayingList[randomSongIdx];
     playSong();
